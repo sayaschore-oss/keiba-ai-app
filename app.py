@@ -6,9 +6,9 @@ import google.generativeai as genai
 # --- ページ設定 ---
 st.set_page_config(page_title="伝説の馬券師AI", page_icon="🏇", layout="wide")
 st.title("🏇 伝説の馬券師AI - 究極解析")
-st.caption("コピペされたカオスなデータから『期待値のバグ』を精密に炙り出します。")
+st.caption("コピペデータから『期待値のバグ』を精密に炙り出します。")
 
-# --- 設定エリア (Secrets対応) ---
+# --- 設定エリア (サイドバー) ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except:
@@ -21,17 +21,22 @@ with st.sidebar:
     else:
         st.success("✅ APIキー適用済み")
     
+    # モデル選択機能の追加
     model_name = st.selectbox(
         "AIモデル選択", 
-        ["models/gemini-3.1-flash-lite", "models/gemini-3.1-pro-preview"],
-        help="通常はLite、勝負レースはProがおすすめ。"
+        [
+            "models/gemini-3.1-flash-lite",   # 爆速・軽量
+            "models/gemini-3.1-pro-preview", # 【推奨】知能最高。馬番ミス防止に最適
+            "models/gemini-2.5-pro"          # 安定版
+        ],
+        help="馬番の間違いを減らしたい時は『3.1-pro-preview』を選んでください。"
     )
     st.divider()
     st.info("netkeibaの出馬表を『全選択→コピー』して貼り付けてください。")
 
 # --- メイン画面 ---
-st.info("💡 使い方：netkeibaの『出馬表』ページをスマホやPCで全選択コピーし、下の枠に貼り付けてください。")
-raw_data = st.text_area("ここにnetkeibaのデータを貼り付け", height=400, placeholder="1 カヴァレリッツォ...\n2 オルネーロ...")
+st.info("💡 使い方：netkeibaの『出馬表』ページをコピーして、下の枠に貼り付けてください。")
+raw_data = st.text_area("ここにデータを貼り付け", height=400, placeholder="1 カヴァレリッツォ...\n2 オルネーロ...")
 
 if st.button("🔥 究極解析を開始する"):
     if not api_key:
@@ -41,6 +46,7 @@ if st.button("🔥 究極解析を開始する"):
     else:
         try:
             genai.configure(api_key=api_key)
+            # 選択されたモデルを使用
             model = genai.GenerativeModel(model_name)
 
             # --- 最強のChain of Thoughtプロンプト ---
@@ -74,15 +80,11 @@ if st.button("🔥 究極解析を開始する"):
             {raw_data}
             """
 
-            with st.spinner("🤖 伝説の馬券師がパドックとデータを照合中..."):
-                # 文字数削減のため、回答は簡潔にするよう内部で調整
+            with st.spinner(f"🤖 {model_name} が分析中..."):
                 response = model.generate_content(prompt)
                 st.markdown("---")
                 st.subheader("✨ 伝説の予想レポート")
                 st.write(response.text)
 
         except Exception as e:
-            if "429" in str(e):
-                st.error("AIの利用制限（Quota）を超えました。数分待つか、モデルをLiteに切り替えてください。")
-            else:
-                st.error(f"エラーが発生しました: {e}")
+            st.error(f"エラーが発生しました: {e}")
