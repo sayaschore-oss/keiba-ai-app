@@ -1,6 +1,0 @@
-streamlit
-pandas
-beautifulsoup4
-requests
-google-generativeai
-lxml
